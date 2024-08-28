@@ -111,6 +111,7 @@ def get_bo_one_length(sp1, sp2):
         if r2 is None: r2 = 2.0
         return r1 + r2
 
+
 class Settings:
     def __init__(
             self,
@@ -297,6 +298,8 @@ class Settings:
             if "FileName" not in potential:
                 if "LAMMPS" in thisfeval["Style"].upper():
                     if isinstance(potential["pair_coeff"], str):
+                        pass
+                    elif isinstance(potential["pair_coeff"], list):
                         pass
                     else:
                         raise ValueError("Potential input must contain a FileName or pair_coeff.")
