@@ -675,13 +675,13 @@ class SeakmcData(LammpsData, MSONable):
                                 elif self.sett.active_volume["FindDefects"]["DiscardType"][
                                      0:2].upper() == "OV" and thisdCN > 0:
                                     isdefect = True
+
                                 if not isdefect:
                                     if 'CN' in method:
                                         if inds.shape[0] - cntype > 0.5:
                                             isdefect = True
                                         elif inds.shape[0] - cntype < -0.5:
                                             isdefect = True
-
                                         if not isdefect:
                                             if 'BL' in method:
                                                 thisscale = (1.0 - 0.2 * (cntype - inds.shape[0]) / cntype)
@@ -2251,6 +2251,16 @@ class ActiveVolume(SeakmcData, MSONable):
 
     def __repr__(self):
         return self.__str__()
+
+    def Write_AV(self, filename, Fixed=False):
+        newAV = copy.deepcopy(self)
+        if not Fixed:
+            inds = np.arange(newAV.nactive, dtype=int)
+            newAV.atoms = newAV.atoms.iloc[inds]
+            newAV.natoms = len(newAV.atoms)
+            newAV.write_file(filename)
+        else:
+            newAV.write_file(filename)
 
     def to_coords(self, Buffer=False, Fixed=False):
         nout = self.nactive
