@@ -2,7 +2,7 @@ import copy
 import math
 import os
 import warnings
-
+import shutil
 import numpy as np
 import pandas as pd
 import scipy.linalg
@@ -33,6 +33,8 @@ class SPSearch:
             pre_disps=[],
             apply_mass=False,
             insituGSPS=False,
+            ikmc=0,
+            DynMatOutpath="DynMatOut",
     ):
         self.idav = idav
         self.idsps = idsps
@@ -51,6 +53,8 @@ class SPSearch:
         self.pre_disps = np.array(pre_disps)
         self.apply_mass = apply_mass
         self.insituGSPS = insituGSPS
+        self.ikmc = ikmc
+        self.DynMatOutpath = DynMatOutpath
 
         self.PREF = self.sett.saddle_point["Prefactor"]
         self.ECONV = self.sett.spsearch["EnConv"]
@@ -89,6 +93,7 @@ class SPSearch:
         self.ISCONNECT = True
         self.ISVALID = True
 
+        self.get_TYPES()
         if self.sett.spsearch["FixTypes_dict"] is None:
             self.FixType = False
             self.Scaling4Types = np.ones([3, self.nactive], dtype=float)
@@ -112,34 +117,33 @@ class SPSearch:
     def __repr__(self):
         return self.__str__()
 
-    def get_scaling_fixtypes(self):
+    def get_TYPES(self):
         if self.data.cusatoms is None:
             types = self.data.atoms['type'].to_numpy().astype(int)
         else:
             types = self.data.cusatoms['type'].to_numpy().astype(int)
-        types = types[0:self.nactive]
+        if self.sett.spsearch["OutFix4IterationResults"]:
+            self.TYPES_ALL = types[0:len(types)]
+        else:
+            self.TYPES_ALL = None
+        self.TYPES = types[0:self.nactive]
 
+    def get_scaling_fixtypes(self):
         self.Scaling4Types = np.ones([3, self.nactive], dtype=float)
         for fixtype in self.sett.spsearch["FixTypes_dict"]:
             for i in range(3):
                 if i in self.sett.spsearch["FixTypes_dict"][fixtype]:
-                    self.Scaling4Types[i] = np.select([types == fixtype, types != fixtype],
+                    self.Scaling4Types[i] = np.select([self.TYPES == fixtype, self.TYPES != fixtype],
                                                       [0.0, self.Scaling4Types[i]])
-                else:
-                    pass
 
     def get_scaling_masses(self):
-        if self.data.cusatoms is None:
-            types = self.data.atoms['type'].to_numpy().astype(int)
-        else:
-            types = self.data.cusatoms['type'].to_numpy().astype(int)
-        types = types[0:self.nactive]
         masses = copy.deepcopy(self.sett.potential["masses"])
         masses = np.array(masses)
         mean = np.mean(masses)
-        self.Scaling4Masses = masses[types - 1]
-        self.Scaling4Masses = np.vstack((self.Scaling4Masses, self.Scaling4Masses, self.Scaling4Masses))
-        self.Scaling4Masses = mean / self.Scaling4Masses
+        Scaling4Masses = masses[self.TYPES - 1]
+        Scaling4Masses = np.vstack((Scaling4Masses, Scaling4Masses, Scaling4Masses))
+        Scaling4Masses = mean / Scaling4Masses
+        return Scaling4Masses
 
     def convert_coord_forward(self, coords):
         nactive = coords.shape[1]
@@ -330,10 +334,18 @@ class SPSearch:
                 quit()
             thisdata = None
 
+            fname = "Runner_" + str(self.thiscolor) + "/dynmat.dat"
+            if self.sett.dynamic_matrix["OutDynMat"]:
+                outf = "KMC_" + str(self.ikmc) + "_AV_" + str(self.idav)
+                outf += "_SPS_" + str(self.idsps) + ".dat"
+                outf = os.path.join(self.DynMatOutpath, outf)
+                if not os.path.exists(outf):
+                    shutil.copy(fname, outf)
+
             delimiter = self.sett.dynamic_matrix["delimiter"]
             vibcut = self.sett.dynamic_matrix["VibCut"]
             LowerHalfMat = self.sett.dynamic_matrix["LowerHalfMat"]
-            vmSP = VibMat.from_file("Runner_" + str(self.thiscolor) + "/dynmat.dat", id=self.thiscolor,
+            vmSP = VibMat.from_file(fname, id=self.thiscolor,
                                     delimiter=delimiter, vibcut=vibcut, LowerHalfMat=LowerHalfMat)
             vmSP.diagonize_matrix()
             vmSP.set_vib()
@@ -362,6 +374,8 @@ class Dimer(SPSearch):
             pre_disps=[],
             apply_mass=False,
             insituGSPS=False,
+            ikmc=0,
+            DynMatOutpath="DynMatOut",
     ):
         super().__init__(
             idav,
@@ -375,6 +389,8 @@ class Dimer(SPSearch):
             pre_disps=pre_disps,
             apply_mass=apply_mass,
             insituGSPS=insituGSPS,
+            ikmc=ikmc,
+            DynMatOutpath=DynMatOutpath,
         )
 
     def dimer_init(self, thisVN=None):
@@ -518,6 +534,10 @@ class Dimer(SPSearch):
         if not isValid:
             print(errormsg)
             quit()
+
+        self.FC_ALL = None
+        if self.sett.spsearch["OutForces4IterationResults"] and self.sett.spsearch["OutFix4IterationResults"]:
+            self.FC_ALL = np.zeros([3, self.data.natoms], dtype=float)
 
     def update_translation_step(self, itstep):
         def get_decayrate(itstep):
@@ -674,6 +694,8 @@ class Dimer(SPSearch):
             print(errormsg)
             quit()
 
+        if self.FC_ALL is not None:
+            self.FC_ALL = (FC.reshape([self.data.natoms, 3])).T
         mask = np.ones(3 * self.nactive, dtype=bool)
         mask = np.append(mask, np.zeros(3 * (self.data.natoms - self.nactive), dtype=bool))
         FC = FC[mask]
@@ -885,32 +907,63 @@ class Dimer(SPSearch):
             print('-----------')
             '''
 
+    def init_iteration_results(self):
+        os.makedirs("ITERATION_RESULTS", exist_ok=True)
+        thisdir = "ITERATION_RESULTS/" + str(self.ikmc) + "_" + str(self.idav) + "_" + str(self.idsps)
+        os.makedirs(thisdir, exist_ok=True)
+        summary_array = np.array([])
+        summary_cols = ["iter", "ntrans", "curvature", "ediff", "ediffmax"]
+        return thisdir, summary_array, summary_cols
+
+    def IR_append_summary_array(self, summary_array):
+        summary_array = np.append(summary_array, [int(self.iter), int(self.NTSITR), round(self.ROCURV, 3),
+                                                  round(self.EDIFF, 3), round(self.EDIFF_MAX, 3)])
+        return summary_array
+
+    def IR_output_VN(self, thisdir):
+        filename = thisdir + "/VectorN_" + str(self.NTSITR)  + ".csv"
+        if not os.path.isfile(filename):
+            df = pd.DataFrame(self.VN.T, columns=["x", "y", "z"])
+            df.to_csv(filename)
+
+    def IR_output_ReaxCoords(self, thisdir):
+        filename = thisdir + "/Coords_" + str(self.NTSITR) + ".csv"
+        if not os.path.isfile(filename):
+            if self.sett.spsearch["OutForces4IterationResults"]:
+                columns = ['type', 'x', 'y', 'z', 'fx', 'fy', 'fz']
+                if self.sett.spsearch["OutFix4IterationResults"]:
+                    data = np.vstack((self.TYPES_ALL, self.XA, self.FC_ALL))
+                else:
+                    data = np.vstack((self.TYPES, self.XCR, self.FC))
+            else:
+                columns = ['type', 'x', 'y', 'z']
+                if self.sett.spsearch["OutFix4IterationResults"]:
+                    data = np.vstack((self.TYPES_ALL, self.XA))
+                else:
+                    data = np.vstack((self.TYPES, self.XCR))
+            df = pd.DataFrame(data.T, columns=columns)
+            df.to_csv(filename)
+
+
+    def IR_output_summary(self, thisdir, summary_array, summary_cols):
+        ncols = len(summary_cols)
+        n = summary_array.shape[0]
+        nrow = int(n / ncols)
+        summary_array = summary_array.reshape([nrow, ncols])
+        df_summary = pd.DataFrame(summary_array, columns=summary_cols)
+        df_summary.to_csv(thisdir + "/summary_array.csv")
+
     def dimer_search(self, thisSPS, ReSearch=False):
         if self.sett.spsearch["ShowIterationResults"]:
-            os.makedirs("ITERATION_RESULTS", exist_ok=True)
-            thisdir = "ITERATION_RESULTS/" + str(self.idav) + "_" + str(self.idsps)
-            os.makedirs(thisdir, exist_ok=True)
-            summary_array = np.array([])
-            summary_cols = ["iter", "ntrans", "curvature", "ediff", "ediffmax"]
-            #summary_cols = ["iter", "ntrans", "curve", "ediff", "ediffmax", "sumx", "sumy", "sumz"]
-            ncols = len(summary_cols)
-
+            thisdir, summary_array, summary_cols = self.init_iteration_results()
         while not self.DI_CON:
             if self.sett.spsearch["ShowIterationResults"]:
                 if self.NTSITR % self.sett.spsearch["Inteval4ShowIterationResults"] == 0:
-                    summary_array = np.append(summary_array, [int(self.iter), int(self.NTSITR), round(self.ROCURV, 3),
-                                                              round(self.EDIFF, 3), round(self.EDIFF_MAX, 3)])
+                    summary_array = self.IR_append_summary_array(summary_array)
                     if self.sett.spsearch["ShowVN4ShowIterationResults"]:
-                        df = pd.DataFrame(self.VN.T, columns=["x", "y", "z"])
-                        filename = thisdir + "/VectorN_" + str(self.NTSITR) + "_" + str(self.iter) + ".csv"
-                        #filename = thisdir+"/instant_displacements_" + str(self.iter)+".csv"
-                        df.to_csv(filename)
+                        self.IR_output_VN(thisdir)
                     if self.sett.spsearch["ShowCoords4ShowIterationResults"]:
-                        df = pd.DataFrame(self.XCR.T, columns=["x", "y", "z"])
-                        filename = thisdir + "/Coords_" + str(self.NTSITR) + "_" + str(self.iter) + ".csv"
-                        #filename = thisdir+"/total_displacements_" + str(self.iter)+".csv"
-                        df.to_csv(filename)
-                    #if self.isRescale: np.savetxt(thisdir+"/RescaleFinal_"+str(self.iter)+".dat", self.Rescale)
+                        self.IR_output_ReaxCoords(thisdir)
 
             self.dimer_force()
             if self.iter == 0:
@@ -973,11 +1026,7 @@ class Dimer(SPSearch):
         self.ENLAST = self.ENCALC
 
         if self.sett.spsearch["ShowIterationResults"]:
-            n = summary_array.shape[0]
-            nrow = int(n / ncols)
-            summary_array = summary_array.reshape([nrow, ncols])
-            df_summary = pd.DataFrame(summary_array, columns=summary_cols)
-            df_summary.to_csv(thisdir + "/summary_array.csv")
+            self.IR_output_summary(thisdir, summary_array, summary_cols)
 
     def dimer_re_search(self, thisSPS, nactive=None):
         if not isinstance(nactive, int): nactive = self.data.nactive + self.data.nbuffer
@@ -1074,6 +1123,8 @@ class Dimer(SPSearch):
 
             self.ENINIT = 0.0
             self.iter = 0
+            if self.FC_ALL is not None:
+                self.FC_ALL = np.zeros([3, self.data.natoms], dtype=float)
             self.dimer_search(thisSPS, ReSearch=True)
 
     def dimer_relaxation(self):
@@ -1132,6 +1183,18 @@ class Dimer(SPSearch):
         thisdata = None
         return enlist[idmax], X12[idmax], xfinlist[idmax]
 
+    def remove_invalid_outputs(self):
+        if not self.ISVALID:
+            if self.sett.spsearch["ShowIterationResults"]:
+                thisdir = "ITERATION_RESULTS/" + str(self.ikmc) + "_" + str(self.idav) + "_" + str(self.idsps)
+                if os.path.isdir(thisdir): shutil.rmtree(thisdir)
+
+            if self.sett.dynamic_matrix["OutDynMat"]:
+                outf = "KMC_" + str(self.ikmc) + "_AV_" + str(self.idav)
+                outf += "_SPS_" + str(self.idsps) + ".dat"
+                outf = os.path.join(self.DynMatOutpath, outf)
+                if os.path.isfile(outf): os.remove(outf)
+
     def dimer_finalize(self):
         if self.DI_MAX:
             self.BARR = self.sett.saddle_point["BarrierCut"] + 10.0
@@ -1186,6 +1249,7 @@ class Dimer(SPSearch):
                 self.ISVALID = False
             elif self.DMAG > self.DMAGCUT:
                 self.ISVALID = False
+        self.remove_invalid_outputs()
 
     def dimer_finish(self):
         self.force_evaluator.close()
@@ -1215,3 +1279,10 @@ class Dimer(SPSearch):
         self.data = None
         self.dmAV = None
         self.pre_disps = []
+        self.FC_ALL = None
+        self.TYPES = None
+        self.TYPES_ALL = None
+        self.Scaling4Types = None
+        self.Scaling4Masses = None
+
+
