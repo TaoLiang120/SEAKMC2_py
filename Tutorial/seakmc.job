@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH -J 1p4
+#SBATCH -A your account 
+#SBATCH --qos=***
+#SBATCH --partition=*****
+#SBATCH -t 144:00:00
+#SBATCH -N 1
+#SBATCH -n ncpu
+##SBATCH --ntasks-per-node=48
+###SBATCH --export=ALL
+
+##cd $SLURM_SUBMIT_DIR
+module unload PE-intel
+##module load lammps/23Jun22_oneapi
+module load anaconda3
+source $ANACONDA3_SH
+conda activate your venv
+
+srun -n ncpu python ~/bin/run_seakmc_p.py

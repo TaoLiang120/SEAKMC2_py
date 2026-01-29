@@ -1,0 +1,69 @@
+potential:
+    species:
+        - Fe
+        - P
+    masses:
+        - 1, 55.847
+    bondlengths:
+        - 1, 1, 2.51
+    coordnums:
+        - 1, 8
+    pair_style: eam/fs
+    FileName: Fe-P.eam.fs
+    Path2Pot: False
+    pair_coeff: False
+force_evaluator:
+    Bin: pylammps
+    Screen: False
+    LogFile: False
+data:
+    atom_style: atomic
+    FileName: data.vac
+    Relaxed: False
+kinetic_MC:
+    NSteps: 2
+    Temp: 800.0
+    AccStyle: NoAcc
+saddle_point:
+    ValidSPs:
+        CheckConnectivity: True
+active_volume:
+    Style: defects
+    DCut4PDR: 4.0
+    FindDefects:
+        Method: BLCN
+    DActive: 7.7
+    DBuffer: 3.0
+    DFixed: 10
+spsearch:
+    NSearch: 3
+    SearchBuffer: False
+    ShowIterationResults: True
+    Inteval4ShowIterationResults: 10
+    ShowVN4ShowIterationResults: True
+    ShowCoords4ShowIterationResults: True
+    LocalRelax:
+        LocalRelax: True
+visual:
+    Screen: True
+    Log: True
+    Invisible: True
+    ShowBuffer: False
+    ShowFixed: False
+    Write_SP_Summary: True
+    Write_Data_SPs:
+        Write_Data_AVs: True
+        Write_KMC_Data: True
+        Write_Prob: True
+        DetailOut: True
+        SPs4Detail: Auto
+        Write_Data_SPs: True
+        Sel_iSPs: ALL
+        DispStyle4DataSP: Both
+        OutputStyle: SEP
+        Offset: 0
+    Write_AV_SPs:
+        Write_Local_AV: True
+        Write_AV_SPs: False
+        Write_Data_AV_SPs: False
+        DispStyle4AVSP: SP

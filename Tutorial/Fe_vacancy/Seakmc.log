@@ -1,0 +1,114 @@
+The data file uses the same format of LAMMPS.The unit is LAMMPS metal unit.
+The default bond length is the bond length in pymatgen with bond order one.
+The default cutting distance for neighbors is 1.1 times of the bond lengths!
+The default coordination number is 4.
+Seakmc start ...
+Successfully loading input and structure ...
+Relaxing the initial structure ...
+istep KMC: 0
+There are 8 defects before the point defect reduction.
+The ground energy is -8020.23 eV at 0 KMC step!
+There are 2 defects (active volumes) in data at 0 KMC step!
+The fractional coords of the defect center are [0.95 0.95 0.95] at 0 KMC step!
+
+ActVol ID: 0 nactive:167 nbuffer:282 nfixed:1502
+AV center fractional coords: (0.95694, 0.95694, 0.95694)
+idav:0, idsps: 0,  ntrans: 179,  barrier:0.646,  ebias: 0.553
+      dmag:0.863, dmagFin:1.213, isConnect: True
+      Valid SPs: 1, num of SPs:1, time: 22.13 s
+-----------------------------------------------------------------
+idav:0, idsps: 1,  ntrans: 286,  barrier:1.139,  ebias: 1.1
+      dmag:1.518, dmagFin:1.721, isConnect: False
+      Valid SPs: 2, num of SPs:2, time: 35.656 s
+-----------------------------------------------------------------
+idav:0, idsps: 2,  ntrans: 150,  barrier:0.646,  ebias: 0.553
+      dmag:0.863, dmagFin:1.213, isConnect: True
+      Valid SPs: 3, num of SPs:3, time: 16.429 s
+-----------------------------------------------------------------
+Found 2 saddle points in 0 active volume!
+-----------------------------------------------------------------
+Total time for 0 active volume: 74.547 s
+-----------------------------------------------------------------
+ActVol ID: 1 nactive:167 nbuffer:282 nfixed:1502
+AV center fractional coords: (0.94306, 0.94306, 0.94306)
+idav:1, idsps: 0,  ntrans: 212,  barrier:0.646,  ebias: 0.553
+      dmag:0.863, dmagFin:1.213, isConnect: True
+      Valid SPs: 1, num of SPs:1, time: 25.111 s
+-----------------------------------------------------------------
+idav:1, idsps: 1,  ntrans: 172,  barrier:0.646,  ebias: 0.553
+      dmag:0.863, dmagFin:1.213, isConnect: True
+      Valid SPs: 2, num of SPs:2, time: 20.602 s
+-----------------------------------------------------------------
+idav:1, idsps: 2,  ntrans: 197,  barrier:0.646,  ebias: 0.553
+      dmag:0.863, dmagFin:1.213, isConnect: True
+      Valid SPs: 3, num of SPs:3, time: 23.157 s
+-----------------------------------------------------------------
+Found 2 saddle points in 1 active volume!
+-----------------------------------------------------------------
+Total time for 1 active volume: 69.173 s
+-----------------------------------------------------------------
+In KMC step ...
+Current basin info at 0 KMC step - ID:0 Number of saddle points:4 ID of selection:[2]
+                  Selected event - Barrier:0.646 Backward barrier:0.093
+-----------------------------------------------------------------
+Relaxing the structure ...
+KMC 0th step is finished.
+Time step for 0 KMC step: 107.832 ps
+Summed time steps after 0 KMC step: 107.832 ps
+Real time cost for 0 KMC step: 148.435 s
+===================================================================
+istep KMC: 1
+There are 3 defects before the point defect reduction.
+The ground energy is -8019.682 eV at 1 KMC step!
+There are 2 defects (active volumes) in data at 1 KMC step!
+The fractional coords of the defect center are [0.475 0.475 0.925] at 1 KMC step!
+
+ActVol ID: 0 nactive:161 nbuffer:288 nfixed:1505
+AV center fractional coords: (0.01171, 0.01171, 0.88829)
+idav:0, idsps: 0,  ntrans: 95,  barrier:0.092,  ebias: -0.546
+      dmag:0.416, dmagFin:1.215, isConnect: True
+      Valid SPs: 1, num of SPs:1, time: 10.347 s
+-----------------------------------------------------------------
+idav:0, idsps: 1,  ntrans: 50,  barrier:20.0,  ebias: 20.0
+      dmag:0.412, dmagFin:0.412, isConnect: False
+      Valid SPs: 1, num of SPs:1, time: 4.999 s
+-----------------------------------------------------------------
+idav:0, idsps: 2,  ntrans: 41,  barrier:0.092,  ebias: -0.546
+      dmag:0.416, dmagFin:1.215, isConnect: True
+      Valid SPs: 1, num of SPs:1, time: 5.004 s
+-----------------------------------------------------------------
+Found 1 saddle points in 0 active volume!
+-----------------------------------------------------------------
+Total time for 0 active volume: 20.688 s
+-----------------------------------------------------------------
+ActVol ID: 1 nactive:161 nbuffer:288 nfixed:1505
+AV center fractional coords: (0.93829, 0.93829, 0.96171)
+idav:1, idsps: 0,  ntrans: 207,  barrier:0.094,  ebias: -0.544
+      dmag:0.416, dmagFin:1.208, isConnect: True
+      Valid SPs: 1, num of SPs:1, time: 28.252 s
+-----------------------------------------------------------------
+idav:1, idsps: 1,  ntrans: 198,  barrier:0.092,  ebias: -0.546
+      dmag:0.416, dmagFin:1.215, isConnect: True
+      Valid SPs: 2, num of SPs:2, time: 24.672 s
+-----------------------------------------------------------------
+idav:1, idsps: 2,  ntrans: 150,  barrier:20.0,  ebias: 20.0
+      dmag:0.411, dmagFin:0.411, isConnect: False
+      Valid SPs: 2, num of SPs:2, time: 17.086 s
+-----------------------------------------------------------------
+Found 1 saddle points in 1 active volume!
+-----------------------------------------------------------------
+Total time for 1 active volume: 70.33 s
+-----------------------------------------------------------------
+In KMC step ...
+Current basin info at 1 KMC step - ID:0 Number of saddle points:2 ID of selection:[0]
+                  Selected event - Barrier:0.092 Backward barrier:0.638
+-----------------------------------------------------------------
+Relaxing the structure ...
+KMC 1th step is finished.
+Time step for 1 KMC step: 0.357 ps
+Summed time steps after 1 KMC step: 108.189 ps
+Real time cost for 1 KMC step: 95.566 s
+===================================================================
+Total KMC time steps for this simulation: 108.189 ps
+Real time cost for this simulation:244.787 s
+===================================================================
