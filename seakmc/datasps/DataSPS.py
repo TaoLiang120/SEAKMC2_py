@@ -150,7 +150,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                     dynmatAV = None
                     if SNC or CalPref:
                         SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idpre, thissett, thisprecursor,
-                                                                             SNC, CalPref, object_dict, thiscolor)
+                                                                             SNC, CalPref, object_dict, thiscolor, istep)
 
                     seakmcdata, thisDataSPs, thisAVitags = data_find_saddlepointsearch(localiav, idpre, thisprecursor,
                                                                                        local_coords, thisSOPs, isPGSYMM,
@@ -199,7 +199,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                 dynmatAV = None
                 if SNC or CalPref:
                     SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idav, thissett, thisAV,
-                                                                         SNC, CalPref, object_dict, thiscolor)
+                                                                         SNC, CalPref, object_dict, thiscolor, istep)
 
                 seakmcdata, DataSPs, AVitags = data_find_saddlepointsearch(iav, idav, thisAV,
                                                                            local_coords, thisSOPs, isPGSYMM, thisVNS,
@@ -227,7 +227,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                 dynmatAV = None
                 if SNC or CalPref:
                     SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idav, thissett, thisAV,
-                                                                         SNC, CalPref, object_dict, thiscolor)
+                                                                         SNC, CalPref, object_dict, thiscolor, istep)
 
                 seakmcdata, DataSPs, AVitags = data_find_saddlepointsearch(iav, idav, thisAV,
                                                                            local_coords, thisSOPs, isPGSYMM, thisVNS,
