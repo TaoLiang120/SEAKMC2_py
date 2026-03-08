@@ -23,7 +23,7 @@ def data_find_saddlepointsearch(iav, idav, thisAV,
                                 istep, thissett, seakmcdata, DefectBank_list, thisSuperBasin, Eground,
                                 thisDataSPs, thisAVitags, df_delete_SPs, thisundo_idavs, thisfinished_AVs,
                                 simulation_time,
-                                object_dict, Precursor=False, insituGSPS=False):
+                                object_dict, Recycle=False, Precursor=False, insituGSPS=False):
     float_precision = thissett.system['float_precision']
     out_paths = object_dict['out_paths']
     LogWriter = object_dict['LogWriter']
@@ -66,7 +66,7 @@ def data_find_saddlepointsearch(iav, idav, thisAV,
         if thisSPS.nSP > 0:
             #if CalPref or thissett.saddle_point["CalBarrsInData"]: thisSPS.get_SP_type(SPlist=thisSPS.SPlist)
             thisDataSPs = postSPS.insert_AVSP2DataSPs(thisDataSPs, thisSPS, idav, DFWriter, Precursor=Precursor)
-            if Precursor and thissett.defect_bank["Recycle"]:
+            if Recycle and thissett.defect_bank["Recycle"]:
                 DefectBank_list = postSPS.add_to_DefectBank(thissett, thisAV, thisSPS, isRecycled, isPGSYMM,
                                                             thisSOPs.sch_symbol, DefectBank_list, out_paths[3])
             if Precursor:
@@ -151,7 +151,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                     if SNC or CalPref:
                         SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idpre, thissett, thisprecursor,
                                                                              SNC, CalPref, object_dict, thiscolor, istep)
-
+                    Recycle = True
                     seakmcdata, thisDataSPs, thisAVitags = data_find_saddlepointsearch(localiav, idpre, thisprecursor,
                                                                                        local_coords, thisSOPs, isPGSYMM,
                                                                                        thisVNS, isRecycled, Pre_Disps,
@@ -164,7 +164,8 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                                        df_delete_SPs, thisundo_idavs,
                                                                                        thisfinished_AVs,
                                                                                        simulation_time,
-                                                                                       object_dict, Precursor=True,
+                                                                                       object_dict,
+                                                                                       Recycle=Recycle, Precursor=True,
                                                                                        insituGSPS=False)
 
                 local_coords, thisVNS = preSPS.initialize_AV_props(thisAV)
@@ -200,7 +201,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                 if SNC or CalPref:
                     SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idav, thissett, thisAV,
                                                                          SNC, CalPref, object_dict, thiscolor, istep)
-
+                Recycle = False
                 seakmcdata, DataSPs, AVitags = data_find_saddlepointsearch(iav, idav, thisAV,
                                                                            local_coords, thisSOPs, isPGSYMM, thisVNS,
                                                                            isRecycled, Pre_Disps,
@@ -209,7 +210,8 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                            thisSuperBasin, Eground,
                                                                            DataSPs, AVitags, df_delete_SPs, undo_idavs,
                                                                            finished_AVs, simulation_time,
-                                                                           object_dict, Precursor=False,
+                                                                           object_dict, Recycle=Recycle,
+                                                                           Precursor=False,
                                                                            insituGSPS=True)
                 Pre_Disps = []
 
@@ -228,7 +230,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                 if SNC or CalPref:
                     SNC, CalPref, dynmatAV = preSPS.get_thisSNC4spsearch(idav, thissett, thisAV,
                                                                          SNC, CalPref, object_dict, thiscolor, istep)
-
+                Recycle = True
                 seakmcdata, DataSPs, AVitags = data_find_saddlepointsearch(iav, idav, thisAV,
                                                                            local_coords, thisSOPs, isPGSYMM, thisVNS,
                                                                            isRecycled, Pre_Disps,
@@ -237,7 +239,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                            thisSuperBasin, Eground,
                                                                            DataSPs, AVitags, df_delete_SPs, undo_idavs,
                                                                            finished_AVs, simulation_time,
-                                                                           object_dict, Precursor=False,
+                                                                           object_dict, Recycle=Recycle, Precursor=False,
                                                                            insituGSPS=False)
 
     thisAV = None
