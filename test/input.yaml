@@ -16,6 +16,20 @@ force_evaluator:
     Bin: pylammps
     Screen: False
     LogFile: False
+    TrialDisps2Basin:
+        TrialDisps2Basin: True
+        RinputTDB: in.TDB
+        Ref_Length: 28.55312
+        Target_StrainRate: 1000.0
+        Disps:
+          - 0.001
+          - 0.002
+          - 0.004
+          - 0.008
+        MinDisp: 0.0001
+        MaxDisp: 0.01
+        StrainRateType: tension
+        Keyword4RinputTDB: displacement
     GPU: NA
 data:
     atom_style: atomic
