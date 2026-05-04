@@ -1,3 +1,10 @@
+system:
+  Restart:
+       LoadRestart: False
+       LoadFile: False
+       WriteRestart: False
+       KMCstep4Restart: 1
+       Reset_Simulation_Time: False
 potential:
     species:
         - Fe
@@ -21,7 +28,7 @@ data:
     FileName: data.vac
     Relaxed: False
 kinetic_MC:
-    NSteps: 2
+    NSteps: 1
     Temp: 800.0
     AccStyle: NoAcc
 saddle_point:
@@ -36,7 +43,7 @@ active_volume:
     DBuffer: 3.0
     DFixed: 10
 spsearch:
-    NSearch: 3
+    NSearch: 2
     SearchBuffer: False
     ShowIterationResults: True
     Inteval4ShowIterationResults: 10
@@ -64,6 +71,7 @@ visual:
         Offset: 0
     Write_AV_SPs:
         Write_Local_AV: True
-        Write_AV_SPs: False
+        Write_AV_SPs: True
         Write_Data_AV_SPs: False
-        DispStyle4AVSP: SP
+        DispStyle4AVSP: Both
+        OutputStyle: SEP

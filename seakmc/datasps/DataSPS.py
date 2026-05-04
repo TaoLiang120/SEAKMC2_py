@@ -23,11 +23,11 @@ def data_find_saddlepointsearch(iav, idav, thisAV,
                                 istep, thissett, seakmcdata, DefectBank_list, thisSuperBasin, Eground,
                                 thisDataSPs, thisAVitags, df_delete_SPs, thisundo_idavs, thisfinished_AVs,
                                 simulation_time,
-                                object_dict, Recycle=False, Precursor=False, insituGSPS=False):
+                                DFWriter, object_dict, Recycle=False, Precursor=False, insituGSPS=False):
     float_precision = thissett.system['float_precision']
     out_paths = object_dict['out_paths']
     LogWriter = object_dict['LogWriter']
-    DFWriter = object_dict['DFWriter']
+
     thiscolor = 0
     ticav = time.time()
     if thisAV is not None:
@@ -51,7 +51,7 @@ def data_find_saddlepointsearch(iav, idav, thisAV,
         thisSPS, df_delete_SPs = mySPS.saddlepoint_search(thiscolor, istep, thissett, idav, thisAV, local_coords,
                                                           thisSOPs, dynmatAV, SNC, CalPref,
                                                           thisSPS, Pre_Disps, thisnspsearch, thisVNS, df_delete_SPs,
-                                                          object_dict, Precursor=Precursor, insituGSPS=insituGSPS)
+                                                          DFWriter, object_dict, Precursor=Precursor, insituGSPS=insituGSPS)
 
         thisSPS, df_delete_SPs = postSPS.SPs_1postprocessing(thissett, thisSPS, df_delete_SPs, DFWriter,
                                                              nSPstart=thisSPS.nSP, insituGSPS=insituGSPS)
@@ -103,7 +103,8 @@ def data_find_saddlepointsearch(iav, idav, thisAV,
 
 
 def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSuperBasin, Eground,
-                           DataSPs, AVitags, df_delete_SPs, undo_idavs, finished_AVs, simulation_time, object_dict):
+                           DataSPs, AVitags, df_delete_SPs, undo_idavs, finished_AVs, simulation_time,
+                           DFWriter, object_dict):
     LogWriter = object_dict['LogWriter']
 
     iav = 0
@@ -164,7 +165,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                                        df_delete_SPs, thisundo_idavs,
                                                                                        thisfinished_AVs,
                                                                                        simulation_time,
-                                                                                       object_dict,
+                                                                                       DFWriter, object_dict,
                                                                                        Recycle=Recycle, Precursor=True,
                                                                                        insituGSPS=False)
 
@@ -210,7 +211,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                            thisSuperBasin, Eground,
                                                                            DataSPs, AVitags, df_delete_SPs, undo_idavs,
                                                                            finished_AVs, simulation_time,
-                                                                           object_dict, Recycle=Recycle,
+                                                                           DFWriter, object_dict, Recycle=Recycle,
                                                                            Precursor=False,
                                                                            insituGSPS=True)
                 Pre_Disps = []
@@ -239,7 +240,7 @@ def data_find_saddlepoints(istep, thissett, seakmcdata, DefectBank_list, thisSup
                                                                            thisSuperBasin, Eground,
                                                                            DataSPs, AVitags, df_delete_SPs, undo_idavs,
                                                                            finished_AVs, simulation_time,
-                                                                           object_dict, Recycle=Recycle, Precursor=False,
+                                                                           DFWriter, object_dict, Recycle=Recycle, Precursor=False,
                                                                            insituGSPS=False)
 
     thisAV = None
