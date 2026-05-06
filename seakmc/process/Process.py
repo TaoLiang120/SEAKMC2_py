@@ -57,31 +57,38 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         logstr = f"istep KMC: {istep}"
         LogWriter.write_data(logstr)
 
-        if thissett.force_evaluator["TrialDisps2Basin"]["TrialDisps2Basin"]:
-            TDBsett = thissett.force_evaluator["TrialDisps2Basin"]
-            thisTrialDisps = TrialDisps(TDBsett["Disps"], TDBsett["Ref_Length"], TDBsett["Target_StrainRate"],
-                                        temp=thissett.kinetic_MC["Temp"], mindisp=TDBsett["MinDisp"],
-                                        maxdisp=TDBsett["MaxDisp"],
-                                        straintype=TDBsett["StrainRateType"])
-            for itrial in range(TDBsett["nDisps"]):
-                displacement = thisTrialDisps.displacements[itrial]
-                thisTDB = TrialDisp2Basin(seakmcdata, displacement, itrial, Eground=Eground,
+        if thisRestart is None:
+            if thissett.force_evaluator["TrialDisps2Basin"]["TrialDisps2Basin"]:
+                TDBsett = thissett.force_evaluator["TrialDisps2Basin"]
+                thisTrialDisps = TrialDisps(TDBsett["Disps"], TDBsett["Ref_Length"], TDBsett["Target_StrainRate"],
+                                            temp=thissett.kinetic_MC["Temp"], mindisp=TDBsett["MinDisp"],
+                                            maxdisp=TDBsett["MaxDisp"],
+                                            straintype=TDBsett["StrainRateType"])
+                for itrial in range(TDBsett["nDisps"]):
+                    displacement = thisTrialDisps.displacements[itrial]
+                    thisTDB = TrialDisp2Basin(seakmcdata, displacement, itrial, Eground=Eground,
+                                              key=TDBsett["Keyword4RinputTDB"])
+                    thisTDB.relax_basin(force_evaluator, LogWriter, ntask_tot=1, nproc_task=1)
+                    thisTDB.run_seakmc(istep, thissett, object_dict)
+                    thisTrialDisps.Add_one_trialdisp(thisTDB)
+
+                target_displacement = thisTrialDisps.apply_displacement()
+                logstr = f"trial displacements: {np.around(thisTrialDisps.displacements, 6)}"
+                logstr += "\n" + f"strains (displacements/Ref_Length):{np.around(thisTrialDisps.strains, 6)}"
+                logstr += "\n" + f"one_over_freqs:{np.around(thisTrialDisps.one_over_freqs, 6)}"
+                logstr += "\n" + f"strain rates:{np.around(thisTrialDisps.strainrates, 6)}"
+                logstr += "\n" + f"target strain:{np.around(thisTrialDisps.target_strain, 6)} target displacement:{np.around(target_displacement, 6)}"
+                logstr += "\n" + f"---End of trial displacements of {istep} KMC step---"
+                logstr += "\n"
+                LogWriter.write_data(logstr)
+
+                thisTDB = TrialDisp2Basin(seakmcdata, target_displacement, TDBsett["nDisps"], Eground=Eground,
                                           key=TDBsett["Keyword4RinputTDB"])
                 thisTDB.relax_basin(force_evaluator, LogWriter, ntask_tot=1, nproc_task=1)
-                thisTDB.run_seakmc(istep, thissett, object_dict)
-                thisTrialDisps.Add_one_trialdisp(thisTDB)
-            target_displacement = thisTrialDisps.apply_displacement()
+                seakmcdata = copy.deepcopy(thisTDB.thisdata)
+                Eground = thisTDB.Eground
+            ### End of Trial Displacements to Basin ###
 
-            logstr = f"strains:{thisTrialDisps.strains} one_over_freqs:{thisTrialDisps.one_over_freqs}"
-            logstr += "\n" + f"target strain:{thisTrialDisps.target_strain} target displacement:{target_displacement}"
-
-            thisTDB = TrialDisp2Basin(seakmcdata, target_displacement, itrial + 1, Eground=Eground,
-                                      key=TDBsett["Keyword4RinputTDB"])
-            thisTDB.relax_basin(force_evaluator, LogWriter, ntask_tot=1, nproc_task=1)
-            seakmcdata = copy.deepcopy(thisTDB.thisdata)
-            Eground = thisTDB.Eground
-
-        if thisRestart is None:
             seakmcdata.get_defects(LogWriter, last_de_center=last_de_center)
             dataout.visualize_data_AVs(thissett.visual, seakmcdata, istep, out_paths[1])
 
@@ -184,6 +191,7 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         thiskmc = None
 
         logstr = "Relaxing the structure ..."
+        LogWriter.write_data(logstr)
         [Eground, relaxed_coords, isValid, errormsg] = force_evaluator.run_runner("OPT", seakmcdata, 0,
                                                                                   nactive=seakmcdata.natoms,
                                                                                   thisExports=thisExports)
@@ -203,7 +211,7 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
             out_paths[1] + "/" + "KMC_" + str(istep + 1) + ".dat", to_atom_style=True)
 
         tockmc = time.time()
-        logstr += "\n" + "KMC " + str(istep) + "th step is finished."
+        logstr = "\n" + "KMC " + str(istep) + "th step is finished."
         logstr += "\n" + f"Time step for {istep} KMC step: {round(this_simulation_time, thissett.system['float_precision'])} ps"
         logstr += "\n" + f"Summed time steps after {istep} KMC step: {round(simulation_time, thissett.system['float_precision'])} ps"
         logstr += "\n" + f"Real time cost for {istep} KMC step: {round(tockmc - tickmc, thissett.system['float_precision'])} s"
