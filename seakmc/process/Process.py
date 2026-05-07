@@ -1,23 +1,21 @@
 import os
-import shutil
 import time
-import copy
-
-import numpy as np
 import pandas as pd
+import numpy as np
+import copy
+import shutil
 
-import seakmc.datasps.DataKMC as dataKMC
-import seakmc.datasps.DataSPS as dataSPS
-import seakmc.datasps.PreSPS as preSPS
-import seakmc.datasps.ReCalibrate as myRecal
-import seakmc.general.DataOut as dataout
-from seakmc.core.data import SeakmcData
 from seakmc.input.Input import SP_COMPACT_HEADER4Delete, SP_DATA_HEADER
-from seakmc.kmc.KMC import SuperBasin
+from seakmc.core.data import SeakmcData
 from seakmc.restart.Restart import RESTART
+from seakmc.kmc.KMC import SuperBasin
 from seakmc.spsearch.SaddlePoints import Data_SPs
+import seakmc.general.DataOut as dataout
+import seakmc.datasps.PreSPS as preSPS
+import seakmc.datasps.DataSPS as dataSPS
+import seakmc.datasps.ReCalibrate as myRecal
+import seakmc.datasps.DataKMC as dataKMC
 from seakmc.process.TrialDisp2Basin import TrialDisp2Basin, TrialDisps
-
 
 def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
     out_paths = object_dict['out_paths']
@@ -25,6 +23,10 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
     LogWriter = object_dict['LogWriter']
     thisSummary = object_dict['thisSummary']
     DFWriter = object_dict['DFWriter']
+    GPU_args = thissett.force_evaluator["GPU"]
+    force_evaluator.init_binary(comm=None,
+                                Screen=thissett.force_evaluator['Screen'], Log=thissett.force_evaluator['LogFile'],
+                                **GPU_args)
 
     THIS_PATH = out_paths[-1]
     thisExports = thisSummary.export_dict
@@ -33,9 +35,8 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         thisSuperBasin = SuperBasin([], thissett.kinetic_MC["Temp"])
         thisSuperBasin.initialization()
         DefectBank_list = []
-        if thissett.defect_bank["LoadDB"]:
-            DefectBank_list = preSPS.load_DefectBanks(thissett.defect_bank, out_paths[2],
-                                                      significant_figures=thissett.system["significant_figures"])
+        if thissett.defect_bank["LoadDB"]: DefectBank_list = preSPS.load_DefectBanks(
+            thissett.defect_bank, out_paths[2], significant_figures=thissett.system["significant_figures"])
         istep_this = 0
     else:
         thisSuperBasin = thisRestart.thisSuperBasin
@@ -54,9 +55,6 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         DFWriter.init_deleted_SPs(istep)
         DFWriter.init_SPs(istep)
 
-        logstr = f"istep KMC: {istep}"
-        LogWriter.write_data(logstr)
-
         if thisRestart is None:
             if thissett.force_evaluator["TrialDisps2Basin"]["TrialDisps2Basin"]:
                 TDBsett = thissett.force_evaluator["TrialDisps2Basin"]
@@ -67,27 +65,31 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
                 for itrial in range(TDBsett["nDisps"]):
                     displacement = thisTrialDisps.displacements[itrial]
                     thisTDB = TrialDisp2Basin(seakmcdata, displacement, itrial, Eground=Eground,
-                                              key=TDBsett["Keyword4RinputTDB"])
+                                              key=TDBsett["Keyword"])
                     thisTDB.relax_basin(force_evaluator, LogWriter, ntask_tot=1, nproc_task=1)
                     thisTDB.run_seakmc(istep, thissett, object_dict)
                     thisTrialDisps.Add_one_trialdisp(thisTDB)
 
                 target_displacement = thisTrialDisps.apply_displacement()
-                logstr = f"trial displacements: {np.around(thisTrialDisps.displacements, 6)}"
+                logstr = "\n" + f"---summary of trial strains of {istep} KMC step---"
+                logstr += f"trial displacements: {np.around(thisTrialDisps.displacements, 6)}"
                 logstr += "\n" + f"strains (displacements/Ref_Length):{np.around(thisTrialDisps.strains, 6)}"
-                logstr += "\n" + f"one_over_freqs:{np.around(thisTrialDisps.one_over_freqs, 6)}"
+                logstr += "\n" + f"barriers: {np.around(thisTrialDisps.barrs, 6)} one_over_freqs:{np.around(thisTrialDisps.one_over_freqs, 6)}"
                 logstr += "\n" + f"strain rates:{np.around(thisTrialDisps.strainrates, 6)}"
                 logstr += "\n" + f"target strain:{np.around(thisTrialDisps.target_strain, 6)} target displacement:{np.around(target_displacement, 6)}"
-                logstr += "\n" + f"---End of trial displacements of {istep} KMC step---"
+                logstr += "\n" + f"---End of trial strains of {istep} KMC step---"
                 logstr += "\n"
                 LogWriter.write_data(logstr)
 
                 thisTDB = TrialDisp2Basin(seakmcdata, target_displacement, TDBsett["nDisps"], Eground=Eground,
-                                          key=TDBsett["Keyword4RinputTDB"])
+                                          key=TDBsett["Keyword"])
                 thisTDB.relax_basin(force_evaluator, LogWriter, ntask_tot=1, nproc_task=1)
                 seakmcdata = copy.deepcopy(thisTDB.thisdata)
                 Eground = thisTDB.Eground
-            ### End of Trial Displacements to Basin ###
+            ### End of TrialDisps2Basin ###
+
+            logstr = f"istep KMC: {istep}"
+            LogWriter.write_data(logstr)
 
             seakmcdata.get_defects(LogWriter, last_de_center=last_de_center)
             dataout.visualize_data_AVs(thissett.visual, seakmcdata, istep, out_paths[1])
@@ -100,11 +102,12 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
 
             undo_idavs = np.arange(seakmcdata.ndefects, dtype=int)
             finished_AVs = 0
-            logstr = f"The ground energy is {round(Eground, thissett.system['float_precision'])} eV at {istep} KMC step!"
+            logstr = (f"The ground energy is {round(Eground, thissett.system['float_precision'])} eV at"
+                      f" {istep} KMC step!")
             logstr += "\n" + f"There are {seakmcdata.ndefects} defects (active volumes) in data at {istep} KMC step!"
             logstr += "\n" + (f"The fractional coords of the defect center are "
-                              f"{np.around(seakmcdata.de_center, decimals=thissett.system['float_precision'])} "
-                              f"at {istep} KMC step!")
+                              f"{np.around(seakmcdata.de_center, decimals=thissett.system['float_precision'])} at"
+                              f" {istep} KMC step!")
             logstr += "\n"
             LogWriter.write_data(logstr)
         else:
@@ -138,11 +141,11 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         seakmcdata.velocities = None
         seakmcdata.defects = None
         seakmcdata.def_atoms = []
+        seakmcdata.atoms_ghost = None
+        seakmcdata.natoms_ghost = 0
         seakmcdata.precursors = None
         seakmcdata.precursor_atoms = []
         seakmcdata.precursor_neighbors = None
-        seakmcdata.atoms_ghost = None
-        seakmcdata.natoms_ghost = 0
 
         os.chdir(THIS_PATH)
 
@@ -183,8 +186,8 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         DataSPs = None
         sel_SPs = None
         last_de_center = thiskmc.update_last_defect_center(thisSuperBasin)
-        if isinstance(thissett.active_volume["DefectCenter4RT_SetMolID"], list): last_de_center = \
-            thissett.active_volume["DefectCenter4RT_SetMolID"]
+        if isinstance(thissett.active_volume["DefectCenter4RT_SetMolID"], list):
+            last_de_center = thissett.active_volume["DefectCenter4RT_SetMolID"]
         seakmcdata = thiskmc.update_coords4relaxation(thisSuperBasin)
         thisSuperBasin.prepare_next(thissett.kinetic_MC)
         AVitags = None
@@ -198,6 +201,7 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
         if not isValid:
             LogWriter.write_data(errormsg)
             quit()
+
         for f in os.listdir("Runner_0/"):
             for i in range(len(thissett.force_evaluator["OutFileHeaders"])):
                 if thissett.force_evaluator["OutFileHeaders"][i] in f:
@@ -212,10 +216,15 @@ def run_seakmc(thissett, seakmcdata, object_dict, Eground, thisRestart):
 
         tockmc = time.time()
         logstr = "\n" + "KMC " + str(istep) + "th step is finished."
-        logstr += "\n" + f"Time step for {istep} KMC step: {round(this_simulation_time, thissett.system['float_precision'])} ps"
-        logstr += "\n" + f"Summed time steps after {istep} KMC step: {round(simulation_time, thissett.system['float_precision'])} ps"
-        logstr += "\n" + f"Real time cost for {istep} KMC step: {round(tockmc - tickmc, thissett.system['float_precision'])} s"
+        logstr += "\n" + (f"Time step for {istep} KMC step: "
+                          f"{round(this_simulation_time, thissett.system['float_precision'])} ps")
+        logstr += "\n" + (f"Summed time steps after {istep} KMC step: "
+                          f"{round(simulation_time, thissett.system['float_precision'])} ps")
+        logstr += "\n" + (f"Real time cost for {istep} KMC step: "
+                          f"{round(tockmc - tickmc, thissett.system['float_precision'])} s")
         logstr += "\n" + "==================================================================="
         LogWriter.write_data(logstr)
+
+    force_evaluator.close()
 
     return simulation_time

@@ -1,6 +1,6 @@
 import os
-import shutil
 import time
+import shutil
 
 
 def postprocess(tic, thissett, object_dict, simulation_time):
@@ -12,7 +12,7 @@ def postprocess(tic, thissett, object_dict, simulation_time):
         if os.path.isfile(f): os.remove(f)
 
     toc = time.time()
-    logstr = f"Total KMC time steps for this simulation: {round(simulation_time, thissett.system['float_precision'])} ps"
+    logstr = f"Total KMC time steps for this simulation:{round(simulation_time, thissett.system['float_precision'])} ps"
     logstr += "\n" + "Real time cost for this simulation:" + str(
         round(toc - tic, thissett.system['float_precision'])) + " s"
     logstr += "\n" + "==================================================================="

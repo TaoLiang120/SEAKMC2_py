@@ -1,9 +1,9 @@
-import copy
 import os
-import shutil
-import subprocess
-
 import numpy as np
+import copy
+import shutil
+
+import subprocess
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Outcar
 
@@ -18,9 +18,11 @@ __date__ = "October 7th, 2021"
 
 
 class VaspRunner(object):
-    def __init__(self, sett):
+    def __init__(self, sett, subprocess=True):
         self.name = 'vasp'
         self.sett = sett
+        self.bin = None
+        self.subprocess = subprocess
         self.callscript = self.sett.force_evaluator['Bin']
         if isinstance(self.sett.force_evaluator['Path2Bin'], str):
             self.path_to_callscript = self.sett.force_evaluator['Path2Bin']
@@ -36,7 +38,10 @@ class VaspRunner(object):
             print(f"Cannot find {os.path.join(self.path_to_callscript, self.callscript)} !")
             quit()
 
-    def run_runner(self, purpose, data, thiscolor, nactive=None, thisExports=None):
+    def init_binary(self, comm=None, Screen=False, Log=False, **kwargs):
+        self.bin = None
+
+    def run_runner(self, purpose, data, thiscolor, nactive=None, thisExports=None, comm=None):
 
         purpose = purpose.upper()
         #nproc_task = self.get_nproc_task(purpose)
@@ -63,7 +68,8 @@ class VaspRunner(object):
         except:
             isValid = False
             errormsg = f"Error on running VASP!"
-            errormsg += "\n" + f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!"
+            errormsg += ("\n" +
+                         f"Job - purpose: {purpose} datatype:{type(data)} thiscolor: {thiscolor} nactive:{nactive}!")
 
         if isValid:
             total_energy = self.get_total_energy()
@@ -71,7 +77,7 @@ class VaspRunner(object):
                 isValid = False
                 errormsg = f"Error on getting energy in VASP!"
                 errormsg += ("\n" +
-                             f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
+                             f"Job - purpose: {purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
 
         if isValid:
             if purpose == "SPSOPT" or purpose == "SPSRELAX":
@@ -80,7 +86,8 @@ class VaspRunner(object):
                     isValid = False
                     errormsg = f"Error on getting coordinates in VASP!"
                     errormsg += ("\n" +
-                                 f"Job - purpose: {purpose} datatype:{type(data)} thiscolor: {thiscolor} nactive:{nactive}!")
+                                 f"Job - purpose:{purpose} datatype:{type(data)} "
+                                 f"thiscolor{thiscolor} nactive:{nactive}!")
 
         return [total_energy, relaxed_coords, isValid, errormsg]
 
@@ -110,7 +117,8 @@ class VaspRunner(object):
         except:
             isValid = False
             errormsg = f"Error on initializing VASP!"
-            errormsg += "\n" + f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!"
+            errormsg += ("\n" +
+                         f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
 
         if isValid:
             total_energy = self.get_total_energy()
@@ -118,7 +126,7 @@ class VaspRunner(object):
                 isValid = False
                 errormsg = f"Error on getting energy in VASP!"
                 errormsg += ("\n" +
-                             f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
+                             f"Job - purpose: {purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
 
         return [total_energy, [], isValid, errormsg]
 
@@ -144,7 +152,8 @@ class VaspRunner(object):
         except:
             isValid = False
             errormsg = f"Error on running VASP!"
-            errormsg += "\n" + f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!"
+            errormsg += ("\n" +
+                         f"Job - purpose:{purpose} datatype:{type(data)} thiscolor:{thiscolor} nactive:{nactive}!")
 
         if isValid:
             total_energy = self.get_total_energy()
@@ -314,9 +323,9 @@ class VaspRunner(object):
             quit()
 
     def get_total_energy(self):
-        if os.path.isfile(os.path.join(self.relative_path, "OUTCAR")):
+        if os.path.isfile(self.relative_path + "/" + "OUTCAR"):
             converged = False
-            with open(os.path.join(self.relative_path, "OUTCAR")) as f:
+            with open(self.relative_path + '/OUTCAR') as f:
                 for line in f:
                     if 'reached' in line and 'required' in line and \
                             'accuracy' in line:
@@ -342,9 +351,9 @@ class VaspRunner(object):
         else:
             return np.array([])
 
-    def get_forces(self, data):
-        if os.path.isfile(os.path.join(self.relative_path, "OUTCAR")):
-            outcar = Outcar(os.path.join(self.relative_path, "OUTCAR"))
+    def get_forces(self):
+        if os.path.isfile(self.relative_path + "/" + "OUTCAR"):
+            outcar = Outcar(self.relative_path + "/" + "OUTCAR")
             forces = outcar.read_table_pattern(
                 header_pattern=r"\sPOSITION\s+TOTAL-FORCE \(eV/Angst\)\n\s-+",
                 row_pattern=r"\s+[+-]?\d+\.\d+\s+[+-]?\d+\.\d+\s+[+-]?\d+\.\d+\s+([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)",
@@ -356,7 +365,7 @@ class VaspRunner(object):
         else:
             return np.array([])
 
-    def ImportValue4RinputOpt(self, rinputs, thisExports=[]):
+    def ImportValue4RinputOpt(self, rinputs, thisExports=None):
         isValid = True
         if not self.sett.force_evaluator['ImportValue4RinputOpt']: isValid = False
         if thisExports is None:
@@ -372,7 +381,7 @@ class VaspRunner(object):
                 thiskeys = KEYS[i]
                 m = len(thiskeys)
                 if m == 2:
-                    if thiskeys[1] in export_Keys:
+                    if thiskeys[1] in thisExports.keys():
                         InKeys.append(thiskeys[0])
                         InVals.append(thisExports[thiskeys[1]])
 
@@ -387,9 +396,9 @@ class VaspRunner(object):
                         afters = list(filter(None, list(map(lambda strings: strings.strip(), thislines[1].split("=")))))
                         na = len(afters)
                         if istart == 0:
-                            newline = key + "=" + str(InVals[ik])
+                            newline = key + " = " + str(InVals[ik])
                         else:
-                            newline = thislines[0] + "=" + key + "=" + str(InVals[ik])
+                            newline = thislines[0] + "=" + key + " = " + str(InVals[ik])
                         if na > 1:
                             for j in range(1, na):
                                 newline += "=" + afters[j]

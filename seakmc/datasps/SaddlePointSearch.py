@@ -84,7 +84,6 @@ def saddlepoint_search(thiscolor, istep, thissett, idav, thisAV, local_coords, t
                         if thissett.dynamic_matrix["OutDynMat"]:
                             if not Precursor:
                                 thisspsearch.calculate_dynamic_matrix(config="FI")
-            thisspsearch.force_evaluator.close()
             thisspsearch.dimer_finish()
 
         if thisspsearch.ISVALID:

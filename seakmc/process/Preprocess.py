@@ -1,9 +1,9 @@
 import os
 
+from seakmc.restart.Restart import RESTART
+from seakmc.core.data import SeakmcData
 import seakmc.general.General as mygen
 import seakmc.process.DataDyn as mydatadyn
-from seakmc.core.data import SeakmcData
-from seakmc.restart.Restart import RESTART
 
 
 def load_RESTART(Restartsett):
@@ -77,7 +77,7 @@ def initial_data_dynamics(thissett, seakmcdata, force_evaluator, LogWriter):
         seakmcdata.to_atom_style()
         seakmcdata.velocities = None
     else:
-        Eground, relaxed_coords, isValid, errormsg =  mydatadyn.data_dynamics("DATAMD0", force_evaluator, seakmcdata,
+        [Eground, relaxed_coords, isValid, errormsg] = mydatadyn.data_dynamics("DATAMD0", force_evaluator, seakmcdata,
                                                                                1,
                                                                                nactive=seakmcdata.natoms,
                                                                                nproc_task=1, thisExports=None)
@@ -95,6 +95,10 @@ def preprocess(thissett):
     out_paths = object_dict['out_paths']
     force_evaluator = object_dict['force_evaluator']
     LogWriter = object_dict['LogWriter']
+    GPU_args = thissett.force_evaluator["GPU"]
+    force_evaluator.init_binary(comm=None,
+                                Screen=thissett.force_evaluator['Screen'], Log=thissett.force_evaluator['LogFile'],
+                                **GPU_args)
 
     thiscolor = 0
     if thisRestart is None:
@@ -122,5 +126,6 @@ def preprocess(thissett):
                 LogWriter.write_data(errormsg)
                 quit()
         seakmcdata.to_lammps_data(out_paths[1] + "/" + "KMC_" + str(istep_this) + ".dat", to_atom_style=True)
+    force_evaluator.close()
 
     return seakmcdata, object_dict, Eground, thisRestart
