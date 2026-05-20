@@ -769,6 +769,9 @@ class SeakmcData(LammpsData, MSONable):
                     for j in range(inds.shape[0]):
                         jj = inds[j]
                         ti[jj] = nr + 1
+                        typej = self.atoms.iloc[jj]["type"] - 1
+                        if typej != thistype:
+                            tt[jj] = 0
 
 
         defect_list = []
@@ -785,7 +788,7 @@ class SeakmcData(LammpsData, MSONable):
         indi = np.where(ti == 0)
         for i in range(indi[0].shape[0]):
             j = indi[0][i]
-            if not j in selected_inds:
+            if j not in selected_inds:
                 defect_list.append(atoms_ghost_array[j])
                 dCN_list.append(1)
                 selected_inds.append(j)
@@ -794,7 +797,7 @@ class SeakmcData(LammpsData, MSONable):
         #print(f"indt = {indt}")
         for i in range(indt[0].shape[0]):
             j = indt[0][i]
-            if not j in selected_inds:
+            if j not in selected_inds:
                 defect_list.append(atoms_ghost_array[j])
                 dCN_list.append(0)
                 selected_inds.append(j)
