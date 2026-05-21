@@ -880,6 +880,11 @@ class Settings:
                 logstr += "\n" + f"This is corresponding to an energy barrier of {barr} eV at {temp} K with a prefactor of {prefactor}!."
                 print(logstr)
 
+        if self.dynamic_matrix["OutDynMat"]:
+            if not self.dynamic_matrix["CalPrefactor"]:
+                errormsg = f"To output dynamic matrix, 'CalPrefactor' has to be True!"
+                raise ValueError(errormsg)
+
         if self.spsearch["insituGuidedSPS"]:
             self.active_volume["Overlapping"] = False
             self.active_volume["Stack4noOverlap"] = False
