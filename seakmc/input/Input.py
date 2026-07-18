@@ -508,14 +508,13 @@ class Settings:
                   "FCT4RT_SetMolID": ["INF", "INF", "INF", "INF", "INF", "INF"],
                   "NMax4Def": False, "NMax4AV": False, "NMin4AV": 40,
                   "PDReduction": True, "SortD4PDR": False, "DCut4PDR": cutdefectmax * 1.4, "RecursiveRed": False,
-                  "Order4Recursive4PDR": None,
-                  "DCut4noOverlap": 9.0 * cutdefectmax, "Overlapping": True, "Order4Recursive4AV": None,
-                  "Overlap4OrderRecursive": True,
+                  "MaxBreadth4Recursive4PDR": None,
+                  "DCut4noOverlap": 9.0 * cutdefectmax, "Overlapping": True, "MaxBreadth4Recursive4AV": None,
                   "Stack4noOverlap": False, "PointGroupSymm": False, "NMax4PG": 1000,
                   "Sorting": True, "Sort_by": sort_by, "SortingSpacer": [0.3, 0.3, 0.3],
                   "SortingShift": [0.0, 0.0, 0.0],
                   "SortingBuffer": False, "SortingFixed": False,
-                  "TurnoffPBC": [False, False, False], "NMin_perproc": 5}
+                  "PBC": [False, False, False], "NMin_perproc": 5}
 
         active_volume = parameters['active_volume']
         if "Style" not in active_volume: active_volume["Style"] = "defects"
@@ -608,8 +607,8 @@ class Settings:
                 elif isinstance(active_volume[key], list):
                     for i in range(min(3, len(active_volume[key]))):
                         thisav[key][i] = active_volume[key][i]
-            elif key == "TurnoffPBC":
-                for i in range(min(6, len(active_volume[key]))):
+            elif key == "PBC":
+                for i in range(min(3, len(active_volume[key]))):
                     thisav[key][i] = active_volume[key][i]
             else:
                 thisav[key] = active_volume[key]
@@ -618,8 +617,10 @@ class Settings:
         tmpstr = thisav["boundary"].strip()
         tmpstrs = list(filter(None, list(map(lambda strings: strings.strip(), tmpstr.split(" ")))))
         thisav["ResetBounds"] = False
+        ##PBC is a must for data, which use boundary in LAMMPS ###
+        ###For AV, it defaults to data, but allows to turn it off
         for i in range(3):
-            if thisav["TurnoffPBC"][i]:
+            if thisav["PBC"][i]:
                 tmpstrs[i] = "f"
                 thisav["ResetBounds"] = True
         if thisav["ResetBounds"]:
@@ -901,14 +902,21 @@ class Settings:
             raise ValueError("The data must be 3 dimensional!")
         if self.active_volume["RT_SetMolID"] and self.active_volume["NPredef"] == 0:
             self.active_volume["NPredef"] = 1
-        if isinstance(self.active_volume["Order4Recursive4PDR"], int):
-            if self.active_volume["Order4Recursive4PDR"] < 1:
-                errormsg = "The Order4Recursive4PDR must be >= 1!"
-                raise ValueError(errormsg)
-        if isinstance(self.active_volume["Order4Recursive4AV"], int):
-            if self.active_volume["Order4Recursive4AV"] < 1:
-                errormsg = "The Order4Recursive4AV must be >= 1!"
-                raise ValueError(errormsg)
+
+        if isinstance(self.active_volume["MaxBreadth4Recursive4PDR"], int):
+            if self.active_volume["MaxBreadth4Recursive4PDR"] < 1:
+                logstr = "The MaxBreadth4Recursive4PDR must be >= 1!"
+                raise ValueError(logstr)
+
+        if isinstance(self.active_volume["MaxBreadth4Recursive4AV"], int):
+            if self.active_volume["MaxBreadth4Recursive4AV"] < 1:
+                errormsg = "The MaxBreadth4Recursive4AV must be >= 1!"
+                raise ValueError(logstr)
+
+            if self.active_volume["Overlapping"]:
+                errormsg = "The Overlapping must be False if MaxBreadth4Recursive4AV is an integer!"
+                raise ValueError(logstr)
+
         if not self.active_volume["Overlapping"]:
             if self.spsearch["SearchBuffer"]:
                 if (self.active_volume["DCut4noOverlap"] <=
